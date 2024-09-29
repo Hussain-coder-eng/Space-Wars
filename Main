@@ -1,0 +1,253 @@
+import turtle
+import time
+import random
+
+# Required by macOSX to show window
+turtle.fd(0)
+wn = turtle.Screen()
+wn.setup(width=400, height=400)
+wn.bgcolor("black")  # background color
+turtle.speed(0)  # set animation speed to maximum
+turtle.ht()  # hide default turtle
+turtle.setundobuffer(1)  # saves memory
+turtle.tracer(0)  # turn off animation
+
+
+class Sprite(turtle.Turtle):
+
+    def __init__(self, spriteshape, color, startx, starty):
+        super().__init__(shape=spriteshape)
+        self.speed(0)  # animation speed. 0 fastest
+        self.penup()
+        self.color(color)
+        self.goto(startx, starty)
+        self.speed_value = 1  # avoid using 'speed' as it conflicts with Turtle's own attribute
+
+    def move(self):
+        self.forward(self.speed_value)
+
+        # Check if the sprite hits the borders
+        if self.xcor() > 290 or self.xcor() < -290 or self.ycor(
+        ) > 290 or self.ycor() < -290:
+            # Calculate the angle to turn based on the current heading
+            current_heading = self.heading()
+            if self.xcor() > 290 or self.xcor() < -290:
+                self.setx(290 * (1 if self.xcor() > 0 else -1))
+            if self.ycor() > 290 or self.ycor() < -290:
+                self.sety(290 * (1 if self.ycor() > 0 else -1))
+            # Adjust the heading by 180 degrees to reverse direction
+            self.setheading(current_heading + 180)
+
+    def is_collision(self, other):
+        if (self.xcor() - 20 <= other.xcor() <= self.xcor() + 20) and \
+           (self.ycor() - 20 <= other.ycor() <= self.ycor() + 20):
+            return True
+        else:
+            return False
+
+
+class Player(Sprite):
+
+    def __init__(self, spriteshape, color, startx, starty):
+        super().__init__(spriteshape, color, startx, starty)
+        self.speed_value = 0  # Start with speed set to 0 (stationary)
+        self.max_speed = 20  # Define maximum speed
+        self.acceleration = 0.2  # Define acceleration rate
+        self.deceleration = 0.2  # Define deceleration rate
+        self.lives = 3
+
+    def turn_left(self):
+        self.left(45)
+
+    def turn_right(self):
+        self.right(45)
+
+    def accelerate(self):
+        self.speed_value += self.acceleration
+        if self.speed_value > self.max_speed:
+            self.speed_value = self.max_speed
+
+    def decelerate(self):
+        self.speed_value -= self.deceleration
+        if self.speed_value < 0:
+            self.speed_value = 0
+
+
+class Enemy(Sprite):
+
+    def __init__(self, spriteshape, color, startx, starty):
+        super().__init__(spriteshape, color, startx, starty)
+        self.speed_value = 3  # Define enemy speed
+        self.setheading(random.randint(0, 360))
+
+
+class Ally(Sprite):
+
+    def __init__(self, spriteshape, color, startx, starty):
+        super().__init__(spriteshape, color, startx, starty)
+        self.speed_value = 3  # Define ally speed
+        self.setheading(random.randint(0, 360))
+
+    def move(self):
+        self.forward(self.speed_value)
+
+        # Check if the sprite hits the borders
+        if self.xcor() > 290 or self.xcor() < -290 or self.ycor(
+        ) > 290 or self.ycor() < -290:
+            # Calculate the angle to turn based on the current heading
+            current_heading = self.heading()
+            if self.xcor() > 290 or self.xcor() < -290:
+                self.setx(290 * (1 if self.xcor() > 0 else -1))
+            if self.ycor() > 290 or self.ycor() < -290:
+                self.sety(290 * (1 if self.ycor() > 0 else -1))
+            # Adjust the heading by 60 degrees to turn left instead of right
+            self.setheading(current_heading - 60)
+
+
+class Missile(Sprite):
+
+    def __init__(self, spriteshape, color, startx, starty):
+        super().__init__(spriteshape, color, startx, starty)
+        self.shapesize(stretch_wid=0.3, stretch_len=0.4, outline=None)
+        self.speed_value = 30  # Define missile speed
+        self.status = "ready"
+        self.goto(-1000, 1000)
+
+    def fire(self):
+        if self.status == "ready":
+            self.goto(player.xcor(), player.ycor())
+            self.setheading(player.heading())
+            self.status = "firing"
+
+    def move(self):
+        if self.status == "ready":
+            self.goto(-1000, 1000)
+
+        if self.status == "firing":
+            self.fd(self.speed_value)
+        # border check
+        if self.xcor() < -290 or self.xcor() > 290 or self.ycor(
+        ) < -290 or self.ycor() > 290:
+            self.goto(-1000, 1000)
+            self.status = "ready"
+
+
+class Game():
+
+    def __init__(self):
+        self.level = 1
+        self.score = 0
+        self.state = "playing"
+        self.pen = turtle.Turtle()
+        self.lives = 3
+
+    def draw_border(self):
+        # Draw border
+        self.pen.speed(0)
+        self.pen.color("white")
+        self.pen.pensize(3)
+        self.pen.penup()
+        self.pen.goto(
+            -300,
+            300)  # Adjusted coordinates to fit within the larger window size
+        self.pen.pendown()
+        for _ in range(4):
+            self.pen.fd(600)  # Increase border length to fit the larger window
+            self.pen.rt(90)
+        self.pen.penup()
+        self.pen.ht()
+        self.pen.pendown()
+
+    def show_staus(self):
+        self.pen.undo()
+        msg = "Score; %s" % (self.score)
+        self.pen.penup()
+        self.pen.goto(-300, 310)
+        self.pen.write(msg, font=("Arial", 16, "normal"))
+
+
+# Create game object
+game = Game()
+
+# Draw game border
+game.draw_border()
+
+# show game status
+game.show_staus()
+# Calculate center of the screen
+center_x = 0
+center_y = 0
+
+# create  sprites
+player = Player("triangle", "white", center_x, center_y)
+#enemy = Enemy("circle", "red", -100, 0)
+missile = Missile("triangle", "yellow", 0, 0)
+#ally = Ally("square", "blue", 100, 0)
+
+enemeies = []
+for i in range(6):
+    enemeies.append(Enemy("circle", "red", -100, 0))
+
+allies = []
+for i in range(6):
+    allies.append(Ally("square", "blue", 100, 0))
+# keyboard bindings
+wn.listen()
+wn.onkey(player.turn_left, "Left")
+wn.onkey(player.turn_right, "Right")
+wn.onkey(player.accelerate, "Up")
+wn.onkey(player.decelerate, "Down")
+wn.onkey(missile.fire, "space")
+
+# Main game loop
+while True:
+    player.move()
+    #enemy.move()
+    missile.move()
+    #ally.move()
+    wn.update()  # update the screen
+    time.sleep(0.01)  # control the game speed
+
+    for enemy in enemeies:
+        enemy.move()
+        # Check for collisions for player
+        if player.is_collision(enemy):
+            x = random.randint(-250, 250)
+            y = random.randint(-250, 250)
+            enemy.goto(x, y)
+            game.score -= 100
+            game.show_staus()
+
+
+    # check for collison between the missile and enemy
+        if missile.is_collision(enemy):
+            x = random.randint(-250, 250)
+            y = random.randint(-250, 250)
+            enemy.goto(x, y)
+            missile.status = "ready"
+            #increase score
+            game.score += 100
+            game.show_staus()
+
+    for ally in allies:
+        ally.move()
+        #check collison between missle and ally
+        if missile.is_collision(ally):
+            x = random.randint(-250, 250)
+            y = random.randint(-250, 250)
+            ally.goto(x, y)
+            missile.status = "ready"
+            #decrease score
+            game.score -= 50
+            game.show_staus()
+
+            # Check for collisions for player
+            if player.is_collision(ally):
+                x = random.randint(-250, 250)
+                y = random.randint(-250, 250)
+                ally.goto(x, y)
+                game.score -= 100
+                game.show_staus()
+
+# Keep the window open until the user presses enter
+delay = input("Press enter to finish. > ")
